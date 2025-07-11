@@ -3,20 +3,20 @@ import { motion } from "framer-motion";
 
 const players = {
   left: [
-    { label: "S",  color: "bg-blue-600" },
-    { label: "OH", color: "bg-blue-700" },
-    { label: "MB", color: "bg-blue-400" },
-    { label: "OP", color: "bg-blue-300" },
-    { label: "OH", color: "bg-blue-500" },
-    { label: "L",  color: "bg-yellow-400" },
+    { label: "S",  color: "bg-blue-600" },      // Setter - Blue (lighter)
+    { label: "OH", color: "bg-blue-500" },      // Outside Hitter - Light Blue
+    { label: "MB", color: "bg-blue-400" },      // Middle Blocker - Lighter Blue
+    { label: "OP", color: "bg-blue-300" },      // Opposite - Very Light Blue
+    { label: "OH", color: "bg-blue-600" },      // Outside Hitter - Blue (lighter)
+    { label: "L",  color: "bg-orange-300" },    // Libero - Light Orange
   ],
   right: [
-    { label: "S",  color: "bg-red-600" },
-    { label: "OH", color: "bg-red-700" },
-    { label: "MB", color: "bg-red-400" },
-    { label: "OP", color: "bg-red-300" },
-    { label: "OH", color: "bg-red-500" },
-    { label: "L",  color: "bg-yellow-600" },
+    { label: "S",  color: "bg-red-600" },       // Setter - Red (lighter)
+    { label: "OH", color: "bg-red-500" },       // Outside Hitter - Light Red
+    { label: "MB", color: "bg-red-400" },       // Middle Blocker - Lighter Red
+    { label: "OP", color: "bg-red-300" },       // Opposite - Very Light Red
+    { label: "OH", color: "bg-red-600" },       // Outside Hitter - Red (lighter)
+    { label: "L",  color: "bg-orange-400" },    // Libero - Light Orange
   ],
 };
 
@@ -40,23 +40,23 @@ const desktopCoords = {
   ]
 };
 
-// Mobile layout (vertical/portrait)
+// Mobile layout (vertical/portrait) - Much smaller size with recalculated positions
 const mobileCoords = {
   left: [
-    { x: 422, y: 760 },  // Pos 1: Back Row Right (from team's perspective)
-    { x: 422, y: 535 },  // Pos 2: Front Row Right (closer to net)
-    { x: 242, y: 535 },  // Pos 3: Front Row Center
-    { x: 85, y: 535 },   // Pos 4: Front Row Left
-    { x: 85, y: 760 },   // Pos 5: Back Row Left
-    { x: 242, y: 760 },  // Pos 6: Back Row Center
+    { x: 245, y: 445 },  // Pos 1: Back Row Right (from team's perspective)
+    { x: 245, y: 320 },  // Pos 2: Front Row Right (closer to net)
+    { x: 144, y: 320 },  // Pos 3: Front Row Center
+    { x: 43, y: 320 },   // Pos 4: Front Row Left
+    { x: 43, y: 445 },   // Pos 5: Back Row Left
+    { x: 144, y: 445 },  // Pos 6: Back Row Center
   ],
   right: [
-    { x: 85, y: 85 },    // Pos 1: Back Row Right (from team's perspective - mirrored)
-    { x: 85, y: 310 },   // Pos 2: Front Row Right (closer to net)
-    { x: 242, y: 310 },  // Pos 3: Front Row Center
-    { x: 422, y: 310 },  // Pos 4: Front Row Left
-    { x: 422, y: 85 },   // Pos 5: Back Row Left
-    { x: 242, y: 85 },   // Pos 6: Back Row Center
+    { x: 43, y: 58 },    // Pos 1: Back Row Right (from team's perspective - mirrored)
+    { x: 43, y: 183 },   // Pos 2: Front Row Right (closer to net)
+    { x: 144, y: 183 },  // Pos 3: Front Row Center
+    { x: 245, y: 183 },  // Pos 4: Front Row Left
+    { x: 245, y: 58 },   // Pos 5: Back Row Left
+    { x: 144, y: 58 },   // Pos 6: Back Row Center
   ]
 };
 
@@ -122,23 +122,25 @@ const useMediaQuery = (query) => {
   return matches;
 };
 
-const snapToGrid = (x, y, courtWidth, courtHeight, gridRows, gridCols) => {
+const snapToGrid = (x, y, courtWidth, courtHeight, gridRows, gridCols, isMobile) => {
   const gridSizeX = courtWidth / gridCols;
   const gridSizeY = courtHeight / gridRows;
-  const snappedX = Math.round(x / gridSizeX) * gridSizeX + (gridSizeX - 56) / 2;
-  const snappedY = Math.round(y / gridSizeY) * gridSizeY + (gridSizeY - 56) / 2;
+  const playerSize = isMobile ? 32 : 56; // 8*4 = 32px for mobile, 14*4 = 56px for desktop
+  const snappedX = Math.round(x / gridSizeX) * gridSizeX + (gridSizeX - playerSize) / 2;
+  const snappedY = Math.round(y / gridSizeY) * gridSizeY + (gridSizeY - playerSize) / 2;
   return { x: snappedX, y: snappedY };
 };
 
-const Player = ({ player, onDragEnd }) => (
+const Player = ({ player, onDragEnd, isMobile }) => (
   <motion.div
     drag
     dragMomentum={false}
     onDragEnd={onDragEnd}
     initial={{ x: player.x, y: player.y }}
     whileTap={{ scale: 1.1, zIndex: 20 }}
+    whileHover={{ scale: 1.05 }}
     style={{ x: player.x, y: player.y }}
-    className={`absolute w-14 h-14 flex items-center justify-center ${player.color} text-white text-lg font-bold rounded-full border-4 border-white shadow-lg cursor-pointer select-none`}
+    className={`absolute ${isMobile ? 'w-8 h-8 text-sm' : 'w-14 h-14 text-lg'} flex items-center justify-center ${player.color} text-white font-bold rounded-full border-2 border-white shadow-lg cursor-pointer select-none transition-all duration-200`}
   >
     {player.label}
   </motion.div>
@@ -164,8 +166,8 @@ function VolleyballTacticalBoard() {
   const positions = currentPositions[rotationIndex];
 
   // Dynamic court dimensions
-  const courtWidth = isMobile ? 540 : 900;
-  const courtHeight = isMobile ? 900 : 540;
+  const courtWidth = isMobile ? 320 : 900;
+  const courtHeight = isMobile ? 535 : 540;
   const gridRows = isMobile ? 9 : 6;
   const gridCols = isMobile ? 6 : 9;
   const gridSizeX = courtWidth / gridCols;
@@ -175,7 +177,7 @@ function VolleyballTacticalBoard() {
     const player = positions[team][index];
     const newX = player.x + info.offset.x;
     const newY = player.y + info.offset.y;
-    const snapped = snapToGrid(newX, newY, courtWidth, courtHeight, gridRows, gridCols);
+    const snapped = snapToGrid(newX, newY, courtWidth, courtHeight, gridRows, gridCols, isMobile);
 
     setCurrentPositions(prevAll => {
       const newAllPositions = prevAll.map((rotation, idx) => {
@@ -210,45 +212,44 @@ function VolleyballTacticalBoard() {
   };
 
   return (
-    <div className="flex flex-col items-center justify-center w-full min-h-screen bg-green-50 p-4 md:p-8">
-      <div className="text-center mb-4 md:mb-6">
-        <h1 className="text-2xl md:text-4xl font-bold">Volleyball 5-1 Rotation Tactical Board</h1>
-        <p className="text-base md:text-lg text-gray-700 mt-2">
-          Rotation: <span className="font-bold text-lg md:text-xl">{rotationIndex + 1}</span>
+    <div className="flex flex-col items-center justify-center w-full min-h-screen bg-gradient-to-br from-green-50 to-blue-50 p-3 md:p-8">
+      <div className="text-center mb-3 md:mb-6">
+        <h1 className="text-lg md:text-4xl font-bold bg-gradient-to-r from-green-600 to-blue-600 bg-clip-text text-transparent">
+          Volleyball Rotation
+        </h1>
+        <p className="text-xs md:text-lg text-gray-600 mt-1 md:mt-2">
+          Rotation: <span className="font-bold text-sm md:text-xl bg-gradient-to-r from-green-500 to-blue-500 bg-clip-text text-transparent">{rotationIndex + 1}</span>
         </p>
-        {isMobile && (
-          <p className="text-sm text-gray-600 mt-1">Mobile view - Court rotated vertically</p>
-        )}
       </div>
       <div
-        className="relative rounded-2xl shadow-xl bg-green-200 overflow-hidden border-4 border-green-700"
+        className="relative rounded-2xl shadow-2xl bg-gradient-to-br from-green-200 via-green-300 to-green-200 overflow-hidden border-4 border-green-600 ring-2 ring-green-400 ring-opacity-50"
         style={{ width: courtWidth, height: courtHeight }}
       >
         {/* Court lines */}
         {[...Array(gridCols)].map((_, i) => (
-          <div key={`v${i}`} className="absolute bg-white/30" style={{ left: (i + 1) * gridSizeX, top: 0, width: 1, height: courtHeight }} />
+          <div key={`v${i}`} className="absolute bg-white/40 shadow-sm" style={{ left: (i + 1) * gridSizeX, top: 0, width: 1, height: courtHeight }} />
         ))}
         {[...Array(gridRows)].map((_, i) => (
-          <div key={`h${i}`} className="absolute bg-white/30" style={{ top: (i + 1) * gridSizeY, left: 0, height: 1, width: courtWidth }} />
+          <div key={`h${i}`} className="absolute bg-white/40 shadow-sm" style={{ top: (i + 1) * gridSizeY, left: 0, height: 1, width: courtWidth }} />
         ))}
         
         {/* Center Line */}
         {isMobile ? (
-          <div className="absolute bg-white" style={{ left: 0, top: courtHeight / 2 - 1, width: courtWidth, height: 2 }} />
+          <div className="absolute bg-white shadow-md" style={{ left: 0, top: courtHeight / 2 - 1, width: courtWidth, height: 3 }} />
         ) : (
-          <div className="absolute bg-white" style={{ left: courtWidth / 2 - 1, top: 0, width: 2, height: courtHeight }} />
+          <div className="absolute bg-white shadow-md" style={{ left: courtWidth / 2 - 1, top: 0, width: 3, height: courtHeight }} />
         )}
         
         {/* Attack Lines */}
         {isMobile ? (
           <>
-            <div className="absolute bg-white" style={{ left: 0, top: courtHeight / 3, width: courtWidth, height: 2 }} />
-            <div className="absolute bg-white" style={{ left: 0, top: (courtHeight * 2) / 3, width: courtWidth, height: 2 }} />
+            <div className="absolute bg-white/80 shadow-sm" style={{ left: 0, top: courtHeight / 3, width: courtWidth, height: 2 }} />
+            <div className="absolute bg-white/80 shadow-sm" style={{ left: 0, top: (courtHeight * 2) / 3, width: courtWidth, height: 2 }} />
           </>
         ) : (
           <>
-            <div className="absolute bg-white" style={{ left: courtWidth / 3, top: 0, width: 2, height: courtHeight }} />
-            <div className="absolute bg-white" style={{ right: courtWidth / 3, top: 0, width: 2, height: courtHeight }} />
+            <div className="absolute bg-white/80 shadow-sm" style={{ left: courtWidth / 3, top: 0, width: 2, height: courtHeight }} />
+            <div className="absolute bg-white/80 shadow-sm" style={{ right: courtWidth / 3, top: 0, width: 2, height: courtHeight }} />
           </>
         )}
         
@@ -258,28 +259,29 @@ function VolleyballTacticalBoard() {
               key={`${team}-${player.label}-${index}`}
               player={player}
               onDragEnd={(e, info) => handleDragEnd(team, index, info)}
+              isMobile={isMobile}
             />
           ))
         )}
       </div>
-      <div className="flex flex-col sm:flex-row items-center gap-4 mt-4 md:mt-8">
+      <div className="flex flex-row items-center justify-center gap-2 md:gap-4 mt-3 md:mt-8 w-full px-4">
         <button
           onClick={handlePrevRotation}
-          className="px-4 md:px-6 py-2 md:py-3 bg-gray-500 hover:bg-gray-700 text-white text-base md:text-lg rounded-xl shadow-lg transition-colors"
+          className="flex-1 max-w-20 md:max-w-none md:flex-initial px-2 md:px-6 py-2 md:py-3 bg-gradient-to-r from-gray-500 to-gray-600 hover:from-gray-600 hover:to-gray-700 text-white text-xs md:text-lg rounded-lg md:rounded-xl shadow-lg hover:shadow-xl transition-all duration-200 transform hover:scale-105"
         >
-          &larr; Prev Rotation
+          ← Prev
         </button>
         <button
           onClick={handleReset}
-          className="px-4 md:px-6 py-2 md:py-3 bg-blue-600 hover:bg-blue-800 text-white text-base md:text-lg rounded-xl shadow-lg transition-colors font-bold"
+          className="flex-1 max-w-20 md:max-w-none md:flex-initial px-2 md:px-6 py-2 md:py-3 bg-gradient-to-r from-blue-500 to-blue-600 hover:from-blue-600 hover:to-blue-700 text-white text-xs md:text-lg rounded-lg md:rounded-xl shadow-lg hover:shadow-xl transition-all duration-200 transform hover:scale-105 font-bold"
         >
-          Reset Positions
+          Reset
         </button>
         <button
           onClick={handleNextRotation}
-          className="px-4 md:px-6 py-2 md:py-3 bg-gray-500 hover:bg-gray-700 text-white text-base md:text-lg rounded-xl shadow-lg transition-colors"
+          className="flex-1 max-w-20 md:max-w-none md:flex-initial px-2 md:px-6 py-2 md:py-3 bg-gradient-to-r from-gray-500 to-gray-600 hover:from-gray-600 hover:to-gray-700 text-white text-xs md:text-lg rounded-lg md:rounded-xl shadow-lg hover:shadow-xl transition-all duration-200 transform hover:scale-105"
         >
-          Next Rotation &rarr;
+          Next →
         </button>
       </div>
     </div>
