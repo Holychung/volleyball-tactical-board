@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useCallback } from "react";
 import { motion } from "framer-motion";
 
 const players = {
@@ -123,24 +123,36 @@ const useMediaQuery = (query) => {
 };
 
 const snapToGrid = (x, y, courtWidth, courtHeight, gridRows, gridCols, isMobile) => {
-  const gridSizeX = courtWidth / gridCols;
-  const gridSizeY = courtHeight / gridRows;
-  const playerSize = isMobile ? 32 : 56; // 8*4 = 32px for mobile, 14*4 = 56px for desktop
-  const snappedX = Math.round(x / gridSizeX) * gridSizeX + (gridSizeX - playerSize) / 2;
-  const snappedY = Math.round(y / gridSizeY) * gridSizeY + (gridSizeY - playerSize) / 2;
-  return { x: snappedX, y: snappedY };
+  // Keep players within court boundaries
+  const playerSize = isMobile ? 32 : 56;
+  const padding = playerSize / 2;
+  
+  const minX = padding;
+  const maxX = courtWidth - padding;
+  const minY = padding;
+  const maxY = courtHeight - padding;
+  
+  // Constrain to court boundaries without snapping to grid
+  const constrainedX = Math.max(minX, Math.min(maxX, x));
+  const constrainedY = Math.max(minY, Math.min(maxY, y));
+  
+  return { x: constrainedX, y: constrainedY };
 };
 
 const Player = ({ player, onDragEnd, isMobile }) => (
   <motion.div
     drag
     dragMomentum={false}
+    dragElastic={0.1}
+    dragConstraints={false}
     onDragEnd={onDragEnd}
     initial={{ x: player.x, y: player.y }}
-    whileTap={{ scale: 1.1, zIndex: 20 }}
+    animate={{ x: player.x, y: player.y }}
+    whileDrag={{ scale: 1.1, zIndex: 30, rotate: 2 }}
     whileHover={{ scale: 1.05 }}
-    style={{ x: player.x, y: player.y }}
-    className={`absolute ${isMobile ? 'w-8 h-8 text-sm' : 'w-14 h-14 text-lg'} flex items-center justify-center ${player.color} text-white font-bold rounded-full border-2 border-white shadow-lg cursor-pointer select-none transition-all duration-200`}
+    whileTap={{ scale: 1.05 }}
+    transition={{ type: "spring", stiffness: 300, damping: 30 }}
+    className={`absolute ${isMobile ? 'w-8 h-8 text-sm' : 'w-14 h-14 text-lg'} flex items-center justify-center ${player.color} text-white font-bold rounded-full border-2 border-white shadow-lg cursor-grab active:cursor-grabbing select-none`}
   >
     {player.label}
   </motion.div>
@@ -173,27 +185,24 @@ function VolleyballTacticalBoard() {
   const gridSizeX = courtWidth / gridCols;
   const gridSizeY = courtHeight / gridRows;
 
-  const handleDragEnd = (team, index, info) => {
+  const handleDragEnd = useCallback((team, index, info) => {
     const player = positions[team][index];
     const newX = player.x + info.offset.x;
     const newY = player.y + info.offset.y;
-    const snapped = snapToGrid(newX, newY, courtWidth, courtHeight, gridRows, gridCols, isMobile);
+    const constrained = snapToGrid(newX, newY, courtWidth, courtHeight, gridRows, gridCols, isMobile);
 
+    // Always update position to where user dropped it (within boundaries)
     setCurrentPositions(prevAll => {
-      const newAllPositions = prevAll.map((rotation, idx) => {
-        if (idx === rotationIndex) {
-          return {
-            ...rotation,
-            [team]: rotation[team].map((p, i) => 
-              i === index ? { ...p, ...snapped } : p
-            )
-          };
-        }
-        return rotation;
-      });
+      const newAllPositions = [...prevAll];
+      newAllPositions[rotationIndex] = {
+        ...newAllPositions[rotationIndex],
+        [team]: newAllPositions[rotationIndex][team].map((p, i) => 
+          i === index ? { ...p, ...constrained } : p
+        )
+      };
       return newAllPositions;
     });
-  };
+  }, [positions, courtWidth, courtHeight, gridRows, gridCols, isMobile, rotationIndex, setCurrentPositions]);
 
   const handleReset = () => {
     setCurrentPositions(prevAll => {
